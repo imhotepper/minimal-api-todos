@@ -4,7 +4,8 @@
 ## Features
 
 - [x] serve html for landing page
-- [ ]  swagger
+- [x]  [Swagger](https://www.nuget.org/packages/Swashbuckle.AspNetCore/)
+- [ ] [MiniValidation](https://github.com/DamianEdwards/MiniValidation)
 -  crud api
 - mapper(mapster or automaper)
 - minimal validation
