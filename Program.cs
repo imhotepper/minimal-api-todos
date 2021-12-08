@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Net;
 using Microsoft.AspNetCore.Builder;
-using MiniValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
 using FluentValidation;
@@ -47,37 +46,54 @@ app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{builder.E
 app.MapGet("/api/todos", (TodosService todosService) => Results.Ok(todosService.GetAll()));
 
 //GetById
-
+//Delete
+app.MapGet("/api/todos/{id}", (int id, TodosService todosService, ILogger<Todo> logger) =>
+{
+    var todo = todosService.GetById(id);
+    if (todo != null) return Results.Ok(todo);
+    return Results.NotFound();
+});
 //Create
-app.MapPost("/api/todos", (TodoDto dto, TodosService todosService, ILogger<Todo> logger /*, IValidator<TodoDto> validator*/) =>
+app.MapPost("/api/todos", (TodoDto dto, TodosService todosService, ILogger<Todo> logger , IValidator<TodoDto> validator) =>
  {
-// ValidationResult validationResult = validator.Validate(dto);
-
-//     if (!validationResult.IsValid)
-//     {
-//         //return Results.BadRequest(validationResult);
-//         foreach(var failure in validationResult.Errors)
-//   {
-  //  Console.WriteLine("Property " + failure.PropertyName + " failed validation. Error was: " + failure.ErrorMessage);
- 
-
      logger.LogInformation($"Receiced request: {JsonSerializer.Serialize(dto)}" );
-     logger.LogInformation($"Is model valid => {MiniValidator.TryValidate(dto, out var errors1)}");
-     logger.LogInformation($"Is model valid => {JsonSerializer.Serialize(errors1)}");
-     
-     if (!MiniValidator.TryValidate(dto, out var errors))
-     {
-         logger.LogWarning($"Bad request with data: {errors}");
-         return Results.BadRequest(errors);
-     }
-     int id = todosService.Create(dto);
+
+    var validationResult = validator.Validate(dto);
+
+    if (!validationResult.IsValid)
+    {
+        logger.LogError($"Invalid request received:{JsonSerializer.Serialize(dto)} ");
+        logger.LogError($"Errors: {JsonSerializer.Serialize(validationResult.Errors)} ");
+        return Results.BadRequest(validationResult.Errors);
+    }
+     var id = todosService.Create(dto);
      logger.LogInformation($"Created new todo with id: {id}");
      return Results.Created($"/api/todos/{id}", null);
  });
 
 //Update
+app.MapPut("/api/todos/{id}", (int id, TodoDto dto, TodosService todosService, ILogger<Todo> logger , IValidator<TodoDto> validator) =>
+{
+    logger.LogInformation($"Receiced request: {JsonSerializer.Serialize(dto)}" );
 
+    var validationResult = validator.Validate(dto);
+
+    if (!validationResult.IsValid)
+    {
+        logger.LogError($"Invalid request received:{JsonSerializer.Serialize(dto)} ");
+        logger.LogError($"Errors: {JsonSerializer.Serialize(validationResult.Errors)} ");
+        return Results.BadRequest(validationResult.Errors);
+    }
+    todosService.Update(id,dto);
+    logger.LogInformation($"Update  todo with id: {id}");
+    return Results.Accepted();
+});
 //Delete
+app.MapDelete("/api/todos/{id}", (int id, TodosService todosService, ILogger<Todo> logger) =>
+{
+    if (todosService.Delete(id)) return Results.NoContent();
+    else return Results.StatusCode((int)HttpStatusCode.InternalServerError);
+});
 
 app.MapGet("/api/ping", () => "pong!");
 
@@ -86,22 +102,24 @@ app.Run();
 
 
 public record  Todo(int? Id, String Title, bool IsCompleted, DateTime doc){
-    public class Validator: AbstractValidator<Todo>{
-        public Validator()
-        {
-            RuleFor(x => x.Title).NotNull().WithMessage("Title required");
-        }
-    }
+   
 }
 
-public record TodoDto(int? Id, [Required][MinLength(3)] String Title, bool IsCompleted){
-     public class Validator: AbstractValidator<Todo>{
+//  public class Validator: AbstractValidator<Todo>{
+//         public Validator()
+//         {
+//             RuleFor(x => x.Title).NotNull().WithMessage("Title required");
+//         }
+//     }
+
+public record TodoDto(int? Id, [Required][MinLength(3)] String Title, bool IsCompleted){}
+
+ public class Validator: AbstractValidator<TodoDto>{
         public Validator()
         {
             RuleFor(x => x.Title).NotNull().WithMessage("Title required");
         }
     }
-}
 
 public class TodosService
 {
@@ -114,4 +132,17 @@ public class TodosService
     }
 
     public IEnumerable<Todo> GetAll() => _todos.ToList<Todo>();
+
+    public bool Delete(int id) => _todos.Remove(_todos.FirstOrDefault(x=>x.Id == id));
+
+    public void Update(int id, TodoDto dto)
+    {
+        var todo = _todos.FirstOrDefault(x => x.Id == id);
+        if (todo == null) return;
+        var newTodo = todo with { Title = dto.Title, IsCompleted = dto.IsCompleted };
+        _todos.Remove(todo);
+        _todos.Add(newTodo);
+    }
+
+    public Todo GetById(int id) => _todos.FirstOrDefault(x => x.Id == id);
 }
