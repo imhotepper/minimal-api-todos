@@ -11,6 +11,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
+using MiniValidation;
+
 
 var builder = WebApplication.CreateBuilder(args);
 //FluentValidation
@@ -46,43 +48,48 @@ app.MapGet("/api/todos/{id}", (int id, TodosService todosService, ILogger<Todo> 
 {
     logger.LogInformation($"Receiced get request for Id: {id}");
     var todo = todosService.GetById(id);
-    return todo != null ? (Task)Results.Ok(todo) : (Task)Results.NotFound();
+    return todo != null ? Results.Ok(todo) : Results.NotFound();
 });
 
 //Create
 app.MapPost("/api/todos",
-    (TodoDto dto, TodosService todosService, ILogger<Todo> logger, IValidator<TodoDto> validator) =>
+    (Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
     {
-        logger.LogInformation($"Receiced POST request: {JsonSerializer.Serialize(dto)}");
-        var validationResult = validator.Validate(dto);
+        logger.LogInformation($"Receiced POST request: {JsonSerializer.Serialize(todo)}");
+        
+        var validationResult = validator.Validate(todo);
 
         if (!validationResult.IsValid)
         {
-            logger.LogError($"Invalid request received:{JsonSerializer.Serialize(dto)} ");
+            logger.LogError($"Invalid request received:{JsonSerializer.Serialize(todo)} ");
             logger.LogError($"Errors: {JsonSerializer.Serialize(validationResult.Errors)} ");
-            return Results.BadRequest(validationResult.Errors);
+            return Results.BadRequest(
+                validationResult.Errors
+                    .Select(x => new { Property = x.PropertyName, Error = x.ErrorMessage}));
         }
-
-        var id = todosService.Create(dto);
+        
+        var id = todosService.Create(todo);
         logger.LogInformation($"Created new todo with id: {id}");
         return Results.Created($"/api/todos/{id}", null);
     });
 
 //Update
 app.MapPut("/api/todos/{id}",
-    (int id, TodoDto dto, TodosService todosService, ILogger<Todo> logger, IValidator<TodoDto> validator) =>
+    (int id, Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
     {
-        logger.LogInformation($"Receiced UPDATE request: {JsonSerializer.Serialize(dto)}");
-        
-        var validationResult = validator.Validate(dto);
+        logger.LogInformation($"Receiced UPDATE request: {JsonSerializer.Serialize(todo)}");
+
+        var validationResult = validator.Validate(todo);
         if (!validationResult.IsValid)
         {
-            logger.LogError($"Invalid request received:{JsonSerializer.Serialize(dto)} \n\n" + 
+            logger.LogError($"Invalid request received:{JsonSerializer.Serialize(todo)} \n\n" +
                             $" {JsonSerializer.Serialize(validationResult.Errors)} ");
-            return Results.BadRequest(validationResult.Errors);
+            return Results.BadRequest(
+                validationResult.Errors
+                    .Select(x => new { Property = x.PropertyName, Error = x.ErrorMessage}));
         }
 
-        todosService.Update(id, dto);
+        todosService.Update(id, todo);
         logger.LogInformation($"Update  todo with id: {id}");
         return Results.Accepted();
     });
@@ -103,18 +110,9 @@ app.Run();
 
 //Todos Service
 
-public record Todo(int? Id, string Title, bool IsCompleted, DateTime doc);
+public record Todo(int? Id, string Title, bool IsCompleted);
 
-//  public class Validator: AbstractValidator<Todo>{
-//         public Validator()
-//         {
-//             RuleFor(x => x.Title).NotNull().WithMessage("Title required");
-//         }
-//     }
-
-public record TodoDto(int? Id, [Required] [MinLength(3)] String Title, bool IsCompleted);
-
-public class Validator : AbstractValidator<TodoDto>
+public class Validator : AbstractValidator<Todo>
 {
     public Validator() => RuleFor(x => x.Title).NotNull().WithMessage("Title required");
 }
@@ -125,9 +123,9 @@ public class TodosService
     //Target Typed new
     private static List<Todo> _todos = new List<Todo>();
 
-    public int Create(TodoDto dto)
+    public int Create(Todo todo)
     {
-        var todo = new Todo(_todos.Count + 1, dto.Title, dto.IsCompleted, DateTime.Now);
+        todo = todo with { Id = _todos.Count + 1 };
         _todos.Add(todo);
         return todo.Id ?? -1;
     }
@@ -136,12 +134,12 @@ public class TodosService
 
     public bool Delete(int id) => _todos.Remove(_todos.FirstOrDefault(x => x.Id == id));
 
-    public void Update(int id, TodoDto dto)
+    public void Update(int id, Todo todo)
     {
-        var todo = _todos.FirstOrDefault(x => x.Id == id);
-        if (todo == null) return;
-        var newTodo = todo with { Title = dto.Title, IsCompleted = dto.IsCompleted };
-        _todos.Remove(todo);
+        var td = _todos.FirstOrDefault(x => x.Id == id);
+        if (td == null) return;
+        var newTodo = td with { Title = todo.Title, IsCompleted = todo.IsCompleted }; 
+        _todos.Remove(td);
         _todos.Add(newTodo);
     }
 
