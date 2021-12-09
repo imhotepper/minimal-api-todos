@@ -42,7 +42,6 @@ app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{builder.E
 app.MapGet("/api/todos", (TodosService todosService) => Results.Ok(todosService.GetAll()));
 
 //GetById
-//Delete
 app.MapGet("/api/todos/{id}", (int id, TodosService todosService, ILogger<Todo> logger) =>
 {
     logger.LogInformation($"Receiced get request for Id: {id}");
