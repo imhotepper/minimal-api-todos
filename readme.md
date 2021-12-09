@@ -7,11 +7,9 @@
 - [x] [Swagger](https://www.nuget.org/packages/Swashbuckle.AspNetCore/)
 - [x] crud api
 - [x] [FluentValidation](https://fluentvalidation.net/)
-- [...] [MiniValidation](https://github.com/DamianEdwards/MiniValidation)
-- mapper(mapster or automaper)
 - [x] todosService based on List<T>
-- [ ] error handling
 - [ ] heroku deploy 
+- [ ] mapper(mapster or automaper)
 
 
 

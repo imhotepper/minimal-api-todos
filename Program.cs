@@ -112,11 +112,10 @@ app.Run();
 
 public record Todo(int? Id, string Title, bool IsCompleted);
 
-public class Validator : AbstractValidator<Todo>
+public class TodoValidator : AbstractValidator<Todo>
 {
-    public Validator() => RuleFor(x => x.Title).NotNull().WithMessage("Title required");
+    public TodoValidator() => RuleFor(x => x.Title).NotNull().WithMessage("Title required");
 }
-
 
 public class TodosService
 {
