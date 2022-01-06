@@ -56,7 +56,7 @@ app.MapPost("/api/todos",
     (Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
     {
         logger.LogInformation($"Receiced POST request: {JsonSerializer.Serialize(todo)}");
-        
+
         var validationResult = validator.Validate(todo);
 
         if (!validationResult.IsValid)
@@ -65,9 +65,9 @@ app.MapPost("/api/todos",
             logger.LogError($"Errors: {JsonSerializer.Serialize(validationResult.Errors)} ");
             return Results.BadRequest(
                 validationResult.Errors
-                    .Select(x => new { Property = x.PropertyName, Error = x.ErrorMessage}));
+                    .Select(x => new { Property = x.PropertyName, Error = x.ErrorMessage }));
         }
-        
+
         var id = todosService.Create(todo);
         logger.LogInformation($"Created new todo with id: {id}");
         return Results.Created($"/api/todos/{id}", null);
@@ -86,7 +86,7 @@ app.MapPut("/api/todos/{id}",
                             $" {JsonSerializer.Serialize(validationResult.Errors)} ");
             return Results.BadRequest(
                 validationResult.Errors
-                    .Select(x => new { Property = x.PropertyName, Error = x.ErrorMessage}));
+                    .Select(x => new { Property = x.PropertyName, Error = x.ErrorMessage }));
         }
 
         todosService.Update(id, todo);
@@ -109,7 +109,6 @@ app.Run();
 
 
 //Todos Service
-
 public record Todo(int? Id, string Title, bool IsCompleted);
 
 public class TodoValidator : AbstractValidator<Todo>
@@ -137,7 +136,7 @@ public class TodosService
     {
         var td = _todos.FirstOrDefault(x => x.Id == id);
         if (td == null) return;
-        var newTodo = td with { Title = todo.Title, IsCompleted = todo.IsCompleted }; 
+        var newTodo = td with { Title = todo.Title, IsCompleted = todo.IsCompleted };
         _todos.Remove(td);
         _todos.Add(newTodo);
     }
