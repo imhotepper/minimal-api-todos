@@ -15,7 +15,7 @@
 
 
 
-## Serve html for landing page
+## Serve HTML for a landing page
 
 In order to serve html files from the ```wwwroot``` folder add the followings:
 - create a folder ``` wwwroot ``` in the root of the project

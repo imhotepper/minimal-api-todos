@@ -1,29 +1,21 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
-using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MiniValidation;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
 //FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Todo>(lifetime: ServiceLifetime.Scoped);
+
 //swagger registration
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -47,13 +39,14 @@ builder.Services.AddSwaggerGen(c =>
                     Type = ReferenceType.SecurityScheme,  
                     Id = "basic"  
                 }  
-            },  
-            new string[] {}  
+            },
+            Array.Empty<string>()
         }  
     });
 });
 //add services used by the api
 builder.Services.AddScoped<TodosService>();
+builder.Services.AddScoped<UserService>();
 // builder.Logging.AddJsonConsole();
 builder.Logging.AddConsole();
 
@@ -92,7 +85,7 @@ app.MapGet("/api/todos", [Authorize] (TodosService todosService, ClaimsPrincipal
 });//.RequireAuthorization();
 
 //GetById
-app.MapGet("/api/todos/{id}", (int id, TodosService todosService, ILogger<Todo> logger) =>
+app.MapGet("/api/todos/{id}", [Authorize](int id, TodosService todosService, ILogger<Todo> logger) =>
 {
     logger.LogInformation($"Receiced get request for Id: {id}");
     var todo = todosService.GetById(id);
@@ -101,7 +94,7 @@ app.MapGet("/api/todos/{id}", (int id, TodosService todosService, ILogger<Todo> 
 
 //Create
 app.MapPost("/api/todos",
-    (Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
+    [Authorize](Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
     {
         logger.LogInformation($"Receiced POST request: {JsonSerializer.Serialize(todo)}");
 
@@ -123,7 +116,7 @@ app.MapPost("/api/todos",
 
 //Update
 app.MapPut("/api/todos/{id}",
-    (int id, Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
+    [Authorize](int id, Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
     {
         logger.LogInformation($"Receiced UPDATE request: {JsonSerializer.Serialize(todo)}");
 
@@ -144,7 +137,7 @@ app.MapPut("/api/todos/{id}",
 
 //Delete
 app.MapDelete("/api/todos/{id}",
-    (int id, TodosService todosService, ILogger<Todo> logger) =>
+    [Authorize](int id, TodosService todosService, ILogger<Todo> logger) =>
     {
         return todosService.Delete(id)
             ? (Task)Results.NoContent()
@@ -195,18 +188,18 @@ public class TodosService
 
   public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
-       // private readonly IUserService _userService;
+       private readonly UserService _userService;
 
         public BasicAuthenticationHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
-            ISystemClock clock
-            //,IUserService userService
+            ISystemClock clock, 
+            UserService userService
             )
             : base(options, logger, encoder, clock)
         {
-          //  _userService = userService;
+          _userService = userService;
         }
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -229,7 +222,7 @@ public class TodosService
                 var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
                 var username = credentials[0];
                 var password = credentials[1];
-                user = new User(username);// await _userService.Authenticate(username, password);
+                user = await _userService.Authenticate(username, password);
             }
             catch
             {
@@ -252,5 +245,12 @@ public class TodosService
     }
     
     public record User(String Username);
+
+public class UserService
+{
+    public async Task<User?> Authenticate(string username, string password) =>
+        //TODO: add db logic
+        await Task.FromResult( !(string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))?  new User(username) : null);
+}
     
     
