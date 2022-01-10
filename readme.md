@@ -5,15 +5,17 @@
 
 - [x] serve html for landing page
 - [x] [Swagger](https://www.nuget.org/packages/Swashbuckle.AspNetCore/)
-- [x] crud api
+- [x] CRUD Api
 - [x] [FluentValidation](https://fluentvalidation.net/)
 - [x] todosService based on List<T>
-- [ ] heroku deploy 
+- [x] BasicAuthentication
 - [ ] mapper(mapster or automaper)
+- [ ] heroku deploy 
 
 
 
-## Serve html for landing page
+
+## Serve HTML for a landing page
 
 In order to serve html files from the ```wwwroot``` folder add the followings:
 - create a folder ``` wwwroot ``` in the root of the project
@@ -78,4 +80,20 @@ var validationResult = validator.Validate(dto);
 if (!validationResult.IsValid)
   return Results.BadRequest(validationResult.Errors);        
 ```
+
+## Basic authentication
+
+Basic authentication will allow the creation of a logged user based on the username sent via the sent Authorization header.
+
+The implementation is based on ```AuthenticationHandler``` that is added via ```builder.Services.AddAuthentication("BasicAuthentication")``` .
+
+In order to work with a real user/password system the underlying logic must be created. In the same is just as an example without validation.
+
+On the actions that require authentication/authorization the following parameter must be added: ```[Authorize] ```.
+
+```c#
+app.MapGet("/api/todos", [Authorize] (TodosService todosService, ClaimsPrincipal user) =>{});
+```
+
+The swagger configuration was updated so that it will provide Basic Authentication integration.
 
