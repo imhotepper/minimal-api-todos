@@ -9,6 +9,7 @@
 - [x] [FluentValidation](https://fluentvalidation.net/)
 - [x] todosService based on List<T>
 - [x] BasicAuthentication
+- [x] Tests (XUnit)
 - [ ] mapper(mapster or automaper)
 - [ ] heroku deploy 
 

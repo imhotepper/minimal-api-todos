@@ -1,7 +1,8 @@
-﻿<Properties StartupConfiguration="{367CD677-ED81-48AC-AAC9-121DA6749DBC}|mini1">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Program.cs">
+﻿<Properties StartupConfiguration="{B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6}|Default">
+  <MonoDevelop.Ide.Workbench ActiveDocument="minimal-todos-tests/ApiTests.cs">
     <Files>
-      <File FileName="Program.cs" Line="37" Column="30" />
+      <File FileName="minimal-todos-tests/ApiTests.cs" Line="7" Column="27" />
+      <File FileName="minimal-todos/LICENSE" Line="22" Column="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -14,13 +15,21 @@
       <Pad Id="MonoDevelop.Debugger.WatchPad">
         <State />
       </Pad>
+      <Pad Id="MonoDevelop.UnitTesting.TestPad">
+        <State name="__root__">
+          <Node name="minimal-todos" expanded="True" selected="True" />
+        </State>
+      </Pad>
     </Pads>
   </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.ItemProperties.minimal-todos-tests PreferredExecutionTarget="MonoDevelop.Default" />
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.ItemProperties.minimal-todos PreferredExecutionTarget="/Applications/Google Chrome.app" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
+    <BreakpointStore>
+      <Breakpoint file="/Users/cv48lu/RiderProjects/minimal-todos/minimal-todos-tests/ApiTests.cs" relfile="minimal-todos-tests/ApiTests.cs" line="18" column="1" />
+    </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MultiItemStartupConfigurations />
 </Properties>

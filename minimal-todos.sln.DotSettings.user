@@ -1,0 +1,40 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=26f0f1cd_002Df3c8_002D4c2f_002D9061_002D7e2d423a53f7/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Can_call_get_todos #3" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6::net6.0::minimal_todos_tests.ApiTests.Can_call_get_todos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=2c15c53f_002Ddb9b_002D47c9_002D9ac4_002D450a00c5c8bf/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Can_call_get_todos #5" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6::net6.0::minimal_todos_tests.ApiTests.Can_call_get_todos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=3c9107a6_002D4a9e_002D4532_002D840b_002D5569e200e812/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Can_call_get_todos #8" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;Project Location="/Users/cv48lu/RiderProjects/minimal-todos/minimal-todos-tests" Presentation="&amp;lt;minimal-todos-tests&amp;gt;" /&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=4ed080ca_002D7332_002D4485_002Da12d_002Da1d72a0e76b5/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Can_call_get_todos #4" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6::net6.0::minimal_todos_tests.ApiTests.Can_call_get_todos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=90d7ef95_002D23bc_002D4149_002Dbe54_002Db27dbfb2ea30/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Can_call_get_todos #7" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6::net6.0::minimal_todos_tests.ApiTests.Can_call_get_todos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=b21c3aeb_002D08ea_002D478b_002D96c6_002Deb3c035c45ce/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Can_call_get_todos #6" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6::net6.0::minimal_todos_tests.ApiTests.Can_call_get_todos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=b515acae_002D49b5_002D49a0_002D9aee_002D8635ac9ad054/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Can_call_get_todos #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6::net6.0::minimal_todos_tests.ApiTests&lt;/TestId&gt;
+    &lt;TestId&gt;NUnit3x::41161398-1AC7-498F-B879-FAFEDA0C6C59::net6.0::Tests.Tests.Can_call_get_todos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=f7b48073_002D1ab6_002D4c4b_002Da1cd_002D6f9875631d95/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Can_call_get_todos" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6::net6.0::minimal_todos_tests.ApiTests.Can_call_get_todos&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

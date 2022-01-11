@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -137,14 +138,12 @@ app.MapPut("/api/todos/{id}",
 
 //Delete
 app.MapDelete("/api/todos/{id}",
-    [Authorize](int id, TodosService todosService, ILogger<Todo> logger) =>
-    {
-        return todosService.Delete(id)
-            ? (Task)Results.NoContent()
-            : (Task)Results.StatusCode((int)HttpStatusCode.InternalServerError);
-    });
+    [Authorize]  (int id, TodosService todosService, ILogger<Todo> logger) =>
+        todosService.Delete(id) ? Results.NoContent()
+            : Results.StatusCode((int)HttpStatusCode.InternalServerError));
+     
 
-app.MapGet("/api/ping", () => "pong!");
+app.MapGet("/api/ping",[AllowAnonymous] () => "pong!");
 
 app.Run();
 
