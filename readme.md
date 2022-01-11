@@ -98,3 +98,9 @@ app.MapGet("/api/todos", [Authorize] (TodosService todosService, ClaimsPrincipal
 
 The swagger configuration was updated so that it will provide Basic Authentication integration.
 
+## Testing the api
+
+In order to test the api a new project was added with the xUnit dependencies.
+
+The tests are linked to the api endpoints and they reflect validation on: Read, Create, Update and Delete.
+
