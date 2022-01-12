@@ -9,9 +9,9 @@
 - [x] [FluentValidation](https://fluentvalidation.net/)
 - [x] TodosService based on List<T>
 - [x] BasicAuthentication
-- [x] Tests (XUnit)
-- [ ] mapper(mapster or automaper)
-- [ ] heroku deploy 
+- [x] Tests [XUnit](https://xunit.net/)
+- [x] [Automaper](https://automapper.org/)
+- [ ] azure/heroku deploy 
 
 
 
@@ -104,3 +104,7 @@ In order to test the api a new project was added with the xUnit dependencies.
 
 The tests are linked to the api endpoints and they reflect validation on: Read, Create, Update and Delete.
 
+
+## Automapper
+
+Automapper: A convention-based object-object mapper. The mapper will do the translation form the TodoDto to the Todo model and the other way arround.

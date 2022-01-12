@@ -36,7 +36,7 @@ public class ApiTests
     public async Task Can_post_todo()
     {
         var response = await _client.PostAsJsonAsync("/api/todos",
-            new Todo(null, Title: "I want to do this thing tomorrow", IsCompleted: false));
+            new TodoDto(null, Title: "I want to do this thing tomorrow", IsCompleted: false));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -51,7 +51,7 @@ public class ApiTests
     public async Task Can_delete_todo()
     {
         var response = await _client.PostAsJsonAsync("/api/todos",
-            new Todo(null, Title: "I want to do this thing tomorrow", IsCompleted: false));
+            new TodoDto(null, Title: "I want to do this thing tomorrow", IsCompleted: false));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -74,24 +74,24 @@ public class ApiTests
     public async Task Can_update_todo()
     {
         var response = await _client.PostAsJsonAsync("/api/todos",
-            new Todo(null, Title: "I want to do this thing tomorrow", IsCompleted: false));
+            new TodoDto(null, Title: "I want to do this thing tomorrow", IsCompleted: false));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
 
-        var todos = await _client.GetFromJsonAsync<List<Todo>>("/api/todos");
+        var todos = await _client.GetFromJsonAsync<List<TodoDto>>("/api/todos");
 
         var todo = Assert.Single(todos);
         Assert.Equal("I want to do this thing tomorrow", todo.Title);
         Assert.False(todo.IsCompleted);
 
-        var nextTodo = todo with { Title = todo.Title + todo.IsCompleted, IsCompleted = todo.IsCompleted };
+        var nextTodo = todo with {  Title = todo.Title + todo.IsCompleted, IsCompleted = todo.IsCompleted };
 
         response = await _client.PutAsJsonAsync($"/api/todos/{todo.Id}", nextTodo);
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
 
-        var updatedTodo = await _client.GetFromJsonAsync<Todo>($"/api/todos/{todo.Id}");
+        var updatedTodo = await _client.GetFromJsonAsync<TodoDto>($"/api/todos/{todo.Id}");
 
         Assert.Equal(updatedTodo.Title, nextTodo.Title);
         Assert.Equal(updatedTodo.IsCompleted, nextTodo.IsCompleted);
@@ -101,6 +101,7 @@ public class ApiTests
     {
         protected override IHost CreateHost(IHostBuilder builder)
         {
+            
             builder.ConfigureServices(services =>
             {
                 // services.RemoveAll(typeof(DbContextOptions<TodoDbContext>));

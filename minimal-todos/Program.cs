@@ -1,11 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -46,8 +47,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 //add services used by the api
-builder.Services.AddScoped<TodosService>();
+//used for claims principal
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TodosService>();
+
+
+
+
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 // builder.Logging.AddJsonConsole();
 builder.Logging.AddConsole();
 
@@ -58,6 +66,11 @@ builder.Services.AddAuthentication("BasicAuthentication")
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
 
 // enable static file
 app.UseFileServer();
@@ -79,26 +92,30 @@ app.UseAuthorization();
 
 
 //GetAll
-app.MapGet("/api/todos", [Authorize] (TodosService todosService, ClaimsPrincipal user) =>
+app.MapGet("/api/todos", [Authorize] (IMapper automapper, TodosService todosService, ClaimsPrincipal user, ILogger<Todo> logger) =>
 {
      var u = user;
-     return Results.Ok(todosService.GetAll());
+     logger.Log(LogLevel.Information,$"Current user: {JsonSerializer.Serialize(user.Identity)}");
+     var mappedTodos = automapper.Map< List<TodoDto>>(todosService.GetAll());
+     return Results.Ok(mappedTodos);
 });//.RequireAuthorization();
 
 //GetById
-app.MapGet("/api/todos/{id}", [Authorize](int id, TodosService todosService, ILogger<Todo> logger) =>
+app.MapGet("/api/todos/{id}", [Authorize](int id, IMapper automapper, TodosService todosService, ILogger<Todo> logger) =>
 {
     logger.LogInformation($"Receiced get request for Id: {id}");
     var todo = todosService.GetById(id);
-    return todo != null ? Results.Ok(todo) : Results.NotFound();
+    return todo != null ? Results.Ok( automapper.Map<TodoDto>(todo)) : Results.NotFound();
 });
 
 //Create
 app.MapPost("/api/todos",
-    [Authorize](Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
+    [Authorize](TodoDto todoDto, IMapper automapper, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
     {
-        logger.LogInformation($"Receiced POST request: {JsonSerializer.Serialize(todo)}");
+        logger.LogInformation($"Receiced POST request: {JsonSerializer.Serialize(todoDto)}");
 
+        var todo = automapper.Map<Todo>(todoDto);
+        
         var validationResult = validator.Validate(todo);
 
         if (!validationResult.IsValid)
@@ -117,10 +134,12 @@ app.MapPost("/api/todos",
 
 //Update
 app.MapPut("/api/todos/{id}",
-    [Authorize](int id, Todo todo, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
+    [Authorize](int id, TodoDto todoDto, IMapper automapper, TodosService todosService, ILogger<Todo> logger, IValidator<Todo> validator) =>
     {
-        logger.LogInformation($"Receiced UPDATE request: {JsonSerializer.Serialize(todo)}");
+        logger.LogInformation($"Receiced UPDATE request: {JsonSerializer.Serialize(todoDto)}");
 
+        var todo = automapper.Map<Todo>(todoDto);
+        
         var validationResult = validator.Validate(todo);
         if (!validationResult.IsValid)
         {
@@ -132,7 +151,7 @@ app.MapPut("/api/todos/{id}",
         }
 
         todosService.Update(id, todo);
-        logger.LogInformation($"Update  todo with id: {id}");
+        logger.LogInformation($"Updated todo with id: {id}");
         return Results.Accepted();
     });
 
@@ -149,7 +168,15 @@ app.Run();
 
 
 //Todos Service
-public record Todo(int? Id, string Title, bool IsCompleted);
+public record TodoDto(int? Id, string Title, bool IsCompleted);
+
+public class Todo
+{
+    public int? Id     { get; set; }
+    public string Title     { get; set; }
+    public bool IsCompleted { get; set; }
+    public string UserName { get; set; }
+}
 
 public class TodoValidator : AbstractValidator<Todo>
 {
@@ -158,38 +185,50 @@ public class TodoValidator : AbstractValidator<Todo>
 
 public class TodosService
 {
+    private readonly ClaimsPrincipal _user;
+
+    public TodosService(IHttpContextAccessor httpContext) => _user = httpContext.HttpContext.User;
+
     //Target Typed new
     private static List<Todo> _todos = new List<Todo>();
 
     public int Create(Todo todo)
     {
-        todo = todo with { Id = _todos.Count + 1 };
+        todo.UserName = _user.Identity.Name;
+        todo. Id = _todos.Count + 1;
         _todos.Add(todo);
         return todo.Id ?? -1;
     }
 
-    public IEnumerable<Todo> GetAll() => _todos.ToList<Todo>();
+    public IEnumerable<Todo> GetAll() => _todos.Where(x=>x.UserName == _user.Identity.Name).ToList<Todo>();
 
-    public bool Delete(int id) => _todos.Remove(_todos.FirstOrDefault(x => x.Id == id));
+    public bool Delete(int id) => _todos.Remove(_todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity.Name));
 
     public void Update(int id, Todo todo)
     {
-        var td = _todos.FirstOrDefault(x => x.Id == id);
+        var td = _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity.Name);
         if (td == null) return;
-        var newTodo = td with { Title = todo.Title, IsCompleted = todo.IsCompleted };
-        _todos.Remove(td);
-        _todos.Add(newTodo);
+        td.Title = todo.Title;
+        td.IsCompleted = todo.IsCompleted ;
     }
 
-    public Todo GetById(int id) => _todos.FirstOrDefault(x => x.Id == id);
+    public Todo GetById(int id) => _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity.Name) ;
 }
 
+public record User( string Username, int Id = 1);
+
+
+public class UserService
+{
+    public async Task<User?> Authenticate(string username, string password) =>
+        await Task.FromResult( !(string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))?  new User(username) : null);
+}
 
   public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
        private readonly UserService _userService;
 
-        public BasicAuthenticationHandler(
+        public BasicAuthenticationHandler( 
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
@@ -212,7 +251,7 @@ public class TodosService
             if (!Request.Headers.ContainsKey("Authorization"))
                 return AuthenticateResult.Fail("Missing Authorization Header");
 
-            User user= null;
+            User? user = null;
             
             try
             {
@@ -232,7 +271,7 @@ public class TodosService
                 return AuthenticateResult.Fail("Invalid Username or Password");
 
             var claims = new[] {
-              //  new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+               new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
             };
             var identity = new ClaimsIdentity(claims, Scheme.Name);
@@ -243,13 +282,13 @@ public class TodosService
         }
     }
     
-    public record User(String Username);
-
-public class UserService
+//Automapper
+public class TodoProfile : Profile
 {
-    public async Task<User?> Authenticate(string username, string password) =>
-        //TODO: add db logic
-        await Task.FromResult( !(string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))?  new User(username) : null);
+    public TodoProfile()
+    {
+        CreateMap<Todo, TodoDto>().ReverseMap();
+    }
 }
-    
+        
     
