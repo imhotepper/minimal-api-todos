@@ -173,9 +173,9 @@ public record TodoDto(int? Id, string Title, bool IsCompleted);
 public class Todo
 {
     public int? Id     { get; set; }
-    public string Title     { get; set; }
+    public string? Title     { get; set; }
     public bool IsCompleted { get; set; }
-    public string UserName { get; set; }
+    public string? UserName { get; set; }
 }
 
 public class TodoValidator : AbstractValidator<Todo>
@@ -187,32 +187,32 @@ public class TodosService
 {
     private readonly ClaimsPrincipal _user;
 
-    public TodosService(IHttpContextAccessor httpContext) => _user = httpContext.HttpContext.User;
+    public TodosService(IHttpContextAccessor httpContext) => _user = httpContext?.HttpContext?.User;
 
     //Target Typed new
     private static List<Todo> _todos = new List<Todo>();
 
     public int Create(Todo todo)
     {
-        todo.UserName = _user.Identity.Name;
+        todo.UserName = _user.Identity?.Name;
         todo. Id = _todos.Count + 1;
         _todos.Add(todo);
         return todo.Id ?? -1;
     }
 
-    public IEnumerable<Todo> GetAll() => _todos.Where(x=>x.UserName == _user.Identity.Name).ToList<Todo>();
+    public IEnumerable<Todo> GetAll() => _todos.Where(x=>x.UserName == _user.Identity?.Name).ToList<Todo>();
 
-    public bool Delete(int id) => _todos.Remove(_todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity.Name));
+    public bool Delete(int id) => _todos.Remove(_todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity?.Name));
 
     public void Update(int id, Todo todo)
     {
-        var td = _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity.Name);
+        var td = _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity?.Name);
         if (td == null) return;
         td.Title = todo.Title;
         td.IsCompleted = todo.IsCompleted ;
     }
 
-    public Todo GetById(int id) => _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity.Name) ;
+    public Todo? GetById(int id) => _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity?.Name) ;
 }
 
 public record User( string Username, int Id = 1);
@@ -256,11 +256,14 @@ public class UserService
             try
             {
                 var authHeader = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-                var credentialBytes = Convert.FromBase64String(authHeader.Parameter);
-                var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
-                var username = credentials[0];
-                var password = credentials[1];
-                user = await _userService.Authenticate(username, password);
+                if (authHeader.Parameter != null)
+                {
+                    var credentialBytes = Convert.FromBase64String(authHeader.Parameter);
+                    var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
+                    var username = credentials[0];
+                    var password = credentials[1];
+                    user = await _userService.Authenticate(username, password);
+                }
             }
             catch
             {

@@ -28,8 +28,8 @@ public class ApiTests
     [Fact]
     public async Task Can_call_get_todos()
     {
-        var todos = await _client.GetFromJsonAsync<List<Todo>>("/api/todos");
-        Assert.Empty(todos);
+        var todos = await _client.GetFromJsonAsync<List<TodoDto>>("/api/todos");
+        Assert.True(todos is List<TodoDto>);
     }
 
     [Fact]
@@ -55,9 +55,10 @@ public class ApiTests
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var todos = await _client.GetFromJsonAsync<List<Todo>>("/api/todos");
+        var todos = await _client.GetFromJsonAsync<List<TodoDto>>("/api/todos");
 
-        var todo = Assert.Single(todos);
+        Assert.True(todos.Count > 0);
+        var todo = todos.ToList().Last();
         Assert.Equal("I want to do this thing tomorrow", todo.Title);
         Assert.False(todo.IsCompleted);
 

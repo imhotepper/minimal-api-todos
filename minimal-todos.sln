@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 25.0.1700.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "minimal-todos-tests", "minimal-todos-tests\minimal-todos-tests.csproj", "{B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "todos-tests", "todos-tests\todos-tests.csproj", "{B7A273E0-E0E5-456B-9CBC-78AB8B5C25E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "minimal-todos", "minimal-todos\minimal-todos.csproj", "{773ADC73-C553-49BB-84A5-057B5A69ADEB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "todos-api", "todos-api\todos-api.csproj", "{773ADC73-C553-49BB-84A5-057B5A69ADEB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{270EAC36-972E-49FA-B8FC-390BC69312B7}"
 	ProjectSection(SolutionItems) = preProject
