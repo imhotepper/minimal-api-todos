@@ -14,8 +14,6 @@
 - [x] azure/heroku deploy 
 
 
-
-
 ## Serve HTML for a landing page
 
 In order to serve html files from the ```wwwroot``` folder add the followings:
