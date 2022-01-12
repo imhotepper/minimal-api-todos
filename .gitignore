@@ -10,4 +10,8 @@ obj
 .vscode/
 
 !.idea/
+.idea/*
+
+
+!.vs/
 .vs/*
