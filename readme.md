@@ -11,7 +11,7 @@
 - [x] BasicAuthentication
 - [x] Tests [XUnit](https://xunit.net/)
 - [x] [Automaper](https://automapper.org/)
-- [ ] azure/heroku deploy 
+- [x] azure/heroku deploy 
 
 
 
@@ -108,3 +108,17 @@ The tests are linked to the api endpoints and they reflect validation on: Read, 
 ## Automapper
 
 Automapper: A convention-based object-object mapper. The mapper will do the translation form the TodoDto to the Todo model and the other way arround.
+
+
+## Deploy
+
+The api is available on :
+- [Heroku](https://miniapi1.herokuapp.com/)
+- [Azure](https://miniapi1.azurewebsites.net/)
+
+The deployment is done via Actions from Github to Azure and via standard git deploy with .net buildpack for Heroku.
+
+<br><br><br>
+Happy coding! 
+
+D!
