@@ -8,6 +8,7 @@
 - [x] CRUD Api
 - [x] [FluentValidation](https://fluentvalidation.net/)
 - [x] TodosService based on List<T>
+- [ ] Global error handling
 - [x] BasicAuthentication
 - [x] Tests [XUnit](https://xunit.net/)
 - [x] [Automaper](https://automapper.org/)
@@ -79,6 +80,33 @@ var validationResult = validator.Validate(dto);
 if (!validationResult.IsValid)
   return Results.BadRequest(validationResult.Errors);        
 ```
+
+
+##  Global error handling
+
+For global error handling we will use the provided error handler middleware.
+
+In order to show error details while in developemnt then we could use Develper exception page ```app.UseDeveloperExceptionPage()``` . 
+In order to add a custom response while not in developement then the ```app.UseExceptionHandler(...)``` can be added and customize the response. The Exception will be logged by the handler automaticaly so no need to re log it. 
+
+```c#
+
+if (app.Environment.IsDevelopment())
+    app.UseDeveloperExceptionPage();
+else
+// custom global error handler
+app.UseExceptionHandler((errorApp) =>
+{
+    errorApp.Run(async (context) =>
+    {
+     //Custom code!
+    });
+});
+}
+
+```
+
+
 
 ## Basic authentication
 
