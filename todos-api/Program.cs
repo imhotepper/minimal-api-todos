@@ -10,6 +10,7 @@ using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Options;
 
 
@@ -47,12 +48,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 //add services used by the api
+
+
 //used for claims principal
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TodosService>();
 
 
+// builder.Services.AddExceptionHandler();
 
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -67,9 +71,33 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+
+
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+}
+else
+{ 
+    //global error handler
+app.UseExceptionHandler((errorApp) =>
+{
+    errorApp.Run(async (context) =>
+    {
+        var exceptionHandlerFeature =
+            context.Features.Get<IExceptionHandlerFeature>();
+        
+        if (exceptionHandlerFeature?.Error != null )
+            app.Logger.LogError(exceptionHandlerFeature?.Error , "Global error logged again with some custom data!");
+        
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+
+        var errorMessage = new { Error = "Internal Server error! " };
+        await context.Response.WriteAsync( JsonSerializer.Serialize(errorMessage));
+    });
+});
 }
 
 // enable static file
@@ -163,6 +191,11 @@ app.MapDelete("/api/todos/{id}",
      
 
 app.MapGet("/api/ping",[AllowAnonymous] () => "pong!");
+
+app.MapGet("/api/error", [AllowAnonymous]() =>
+{
+    throw new ApplicationException("Ups ... something went wrong.");
+});
 
 app.Run();
 
