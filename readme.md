@@ -2,9 +2,7 @@
 # Todos APi minimal API
 
 
-##Presentation
-
-&lt;iframe src=&quot;https://slides.com/imhotepp/minimal-api/embed&quot; width=&quot;576&quot; height=&quot;420&quot; title=&quot;Minimal API .Net 6&quot; scrolling=&quot;no&quot; frameborder=&quot;0&quot; webkitallowfullscreen mozallowfullscreen allowfullscreen&gt;&lt;/iframe&gt;
+##[Presentation](https://slides.com/imhotepp/minimal-api/fullscreen)
 
 
 ## Features
