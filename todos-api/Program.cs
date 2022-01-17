@@ -22,6 +22,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Todo>(lifetime: ServiceLife
 
 //swagger registration
 builder.Services.AddEndpointsApiExplorer();
+#region Basic
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = builder.Environment.ApplicationName, Version = "v1" });
