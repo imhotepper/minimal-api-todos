@@ -8,7 +8,7 @@
 - [x] CRUD Api
 - [x] [FluentValidation](https://fluentvalidation.net/)
 - [x] TodosService based on List<T>
-- [ ] Global error handling
+- [x] Global error handling
 - [x] BasicAuthentication
 - [x] Tests [XUnit](https://xunit.net/)
 - [x] [Automaper](https://automapper.org/)
