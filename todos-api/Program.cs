@@ -24,21 +24,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = builder.Environment.ApplicationName, Version = "v1" });
-    c .AddSecurityDefinition("basic", new OpenApiSecurityScheme  
-    {  
+#region basic auth
+    c .AddSecurityDefinition("basic", new OpenApiSecurityScheme {  
         Name = "Authorization",  
         Type = SecuritySchemeType.Http,  
         Scheme = "basic",  
         In = ParameterLocation.Header,  
         Description = "Basic Authorization header using the Bearer scheme."  
     });  
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement  
-    {  
-        {  
-            new OpenApiSecurityScheme  
-            {  
-                Reference = new OpenApiReference  
-                {  
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement  { {  
+            new OpenApiSecurityScheme  {  
+                Reference = new OpenApiReference   {  
                     Type = ReferenceType.SecurityScheme,  
                     Id = "basic"  
                 }  
@@ -46,6 +42,22 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }  
     });
+#endregion
+#region Bearer
+    c .AddSecurityDefinition("Bearer", new OpenApiSecurityScheme {  
+        Description="JWT authorization using bearer scheme",
+        Name = "Authorization",  
+        Type = SecuritySchemeType.ApiKey,  
+        In = ParameterLocation.Header,  
+    });  
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement  {{  
+            new OpenApiSecurityScheme {  
+                Reference = new OpenApiReference {  
+                    Type = ReferenceType.SecurityScheme,  
+                    Id = "Bearer"  
+                }  
+            },Array.Empty<string>()}});
+#endregion
 });
 //add services used by the api
 
@@ -62,12 +74,25 @@ builder.Services.AddScoped<TodosService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 // builder.Logging.AddJsonConsole();
 builder.Logging.AddConsole();
-
+builder.Logging.AddSimpleConsole();
 
 builder.Services.AddAuthentication("BasicAuthentication")
     .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 
+
+// builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//         .AddJwtBearer();
+
+// builder.Services.AddAuthorization(options =>{
+//     options.FallbackPolicy =  new AuthorizationPolicyBuilder()
+//     .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+//     .RequireAuthenticatedUser()
+//     .Build();
+// });
+
 builder.Services.AddAuthorization();
+
+
 
 var app = builder.Build();
 
@@ -104,7 +129,7 @@ app.UseExceptionHandler((errorApp) =>
 app.UseFileServer();
 
 // http logging
-//app.UseHttpLogging();
+// app.UseHttpLogging();
 
 //swagger initialization
 app.UseSwagger();
@@ -192,10 +217,10 @@ app.MapDelete("/api/todos/{id}",
 
 app.MapGet("/api/ping",[AllowAnonymous] () => "pong!");
 
-app.MapGet("/api/error", [AllowAnonymous]() =>
+app.MapGet("/api/error", () =>
 {
     throw new ApplicationException("Ups ... something went wrong.");
-});
+}).AllowAnonymous();
 
 app.Run();
 
