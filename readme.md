@@ -1,6 +1,12 @@
 
 # Todos APi minimal API
 
+
+##Presentation
+
+<iframe src="https://slides.com/imhotepp/minimal-api/embed" width="576" height="420" title="Minimal API .Net 6" scrolling="no" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+
+
 ## Features
 
 - [x] Serve html for landing page
