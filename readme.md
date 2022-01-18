@@ -10,11 +10,11 @@
 - [x] Serve html for landing page
 - [x] [Swagger](https://www.nuget.org/packages/Swashbuckle.AspNetCore/)
 - [x] CRUD Api
-- [x] [FluentValidation](https://fluentvalidation.net/)
+- [x] [FluentValidation](https://fluentvalidation.net/) && [MiniValidation](https://github.com/DamianEdwards/MiniValidation)
 - [x] TodosService based on List<T>
 - [x] Global error handling
 - [x] BasicAuthentication
-- [x] Tests [XUnit](https://xunit.net/)
+- [x] Integration Tests [XUnit](https://xunit.net/)
 - [x] [Automaper](https://automapper.org/)
 - [x] azure/heroku deploy 
 
