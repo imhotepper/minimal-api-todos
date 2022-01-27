@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -5,13 +6,13 @@ using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Options;
+using MiniValidation;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -119,7 +120,7 @@ else
                 context.Features.Get<IExceptionHandlerFeature>();
 
             if (exceptionHandlerFeature?.Error != null)
-                app.Logger.LogError(exceptionHandlerFeature?.Error,
+                app.Logger.LogError(exceptionHandlerFeature.Error,
                     "Global error logged again with some custom data!");
 
             context.Response.StatusCode = 500;
@@ -150,7 +151,6 @@ app.UseAuthorization();
 app.MapGet("/api/todos",
     [Authorize](IMapper automapper, TodosService todosService, ClaimsPrincipal user, ILogger<Todo> logger) =>
     {
-        var u = user;
         logger.Log(LogLevel.Information, $"Current user: {JsonSerializer.Serialize(user.Identity)}");
         var mappedTodos = automapper.Map<List<TodoDto>>(todosService.GetAll());
         return Results.Ok(mappedTodos);
@@ -174,17 +174,20 @@ app.MapPost("/api/todos",
 
         var todo = automapper.Map<Todo>(todoDto);
 
-        var validationResult = validator.Validate(todo);
+        #region mini-validation
 
-        if (!validationResult.IsValid)
+        if (!MiniValidator.TryValidate(todo, out var errors))
         {
             logger.LogError($"Invalid request received:{JsonSerializer.Serialize(todo)} ");
-            logger.LogError($"Errors: {JsonSerializer.Serialize(validationResult.Errors)} ");
-            return Results.BadRequest(
-                validationResult.Errors
-                    .Select(x => new { Property = x.PropertyName, Error = x.ErrorMessage }));
-        }
+            logger.LogError($"Errors: {JsonSerializer.Serialize(errors)} ");
 
+            return Results.BadRequest(
+                errors.Keys.SelectMany(x => errors[x].Select(y => new { Property = x, Error = y }))
+            );
+        }
+       
+        #endregion
+   
         var id = todosService.Create(todo);
         logger.LogInformation($"Created new todo with id: {id}");
         return Results.Created($"/api/todos/{id}", null);
@@ -235,6 +238,7 @@ public record TodoDto(int? Id, string Title, bool IsCompleted);
 public class Todo
 {
     public int? Id { get; set; }
+    [Required]
     public string? Title { get; set; }
     public bool IsCompleted { get; set; }
     public string? UserName { get; set; }
@@ -247,9 +251,9 @@ public class TodoValidator : AbstractValidator<Todo>
 
 public class TodosService
 {
-    private readonly ClaimsPrincipal _user;
+    private readonly ClaimsPrincipal? _user;
 
-    public TodosService(IHttpContextAccessor httpContext) => _user = httpContext?.HttpContext?.User;
+    public TodosService(IHttpContextAccessor httpContext) => _user = httpContext.HttpContext?.User;
 
     //Target Typed new
     private static List<Todo> _todos = new List<Todo>();
@@ -262,7 +266,7 @@ public class TodosService
         return todo.Id ?? -1;
     }
 
-    public IEnumerable<Todo> GetAll() => _todos.Where(x => x.UserName == _user.Identity?.Name).ToList<Todo>();
+    public IEnumerable<Todo> GetAll() => _todos.Where(x => x.UserName == _user.Identity?.Name).ToList();
 
     public bool Delete(int id) =>
         _todos.Remove(_todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity?.Name));
@@ -309,7 +313,7 @@ public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSc
     {
         // skip authentication if endpoint has [AllowAnonymous] attribute
         var endpoint = Context.GetEndpoint();
-        if (endpoint?.Metadata?.GetMetadata<IAllowAnonymous>() != null)
+        if (endpoint?.Metadata.GetMetadata<IAllowAnonymous>() != null)
             return AuthenticateResult.NoResult();
 
 
