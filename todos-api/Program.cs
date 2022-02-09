@@ -14,9 +14,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Options;
 using MiniValidation;
 
-
 var builder = WebApplication.CreateBuilder(args);
-
 
 //FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Todo>(lifetime: ServiceLifetime.Scoped);
@@ -75,16 +73,12 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TodosService>();
 
 
-// builder.Services.AddExceptionHandler();
-
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-// builder.Logging.AddJsonConsole();
 builder.Logging.AddConsole();
 builder.Logging.AddSimpleConsole();
 
 builder.Services.AddAuthentication("BasicAuthentication")
     .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
-
 
 // builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //         .AddJwtBearer();
@@ -98,12 +92,12 @@ builder.Services.AddAuthentication("BasicAuthentication")
 
 builder.Services.AddAuthorization();
 
-
 var app = builder.Build();
 
+// http logging
 app.UseHttpLogging();
 
-
+// Erorr handling
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -134,18 +128,13 @@ else
 // enable static file
 app.UseFileServer();
 
-// http logging
-// app.UseHttpLogging();
-
 //swagger initialization
 app.UseSwagger();
 app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{builder.Environment.ApplicationName} v1"); });
-//app.MapGet("/", () => Results.Redirect("/swagger"));
 
 //Add authentication
 app.UseAuthentication();
 app.UseAuthorization();
-
 
 //GetAll
 app.MapGet("/api/todos",
@@ -202,6 +191,8 @@ app.MapPut("/api/todos/{id}",
 
         var todo = automapper.Map<Todo>(todoDto);
 
+        #region Fluent Validation
+
         var validationResult = validator.Validate(todo);
         if (!validationResult.IsValid)
         {
@@ -211,6 +202,8 @@ app.MapPut("/api/todos/{id}",
                 validationResult.Errors
                     .Select(x => new { Property = x.PropertyName, Error = x.ErrorMessage }));
         }
+
+        #endregion
 
         todosService.Update(id, todo);
         logger.LogInformation($"Updated todo with id: {id}");
