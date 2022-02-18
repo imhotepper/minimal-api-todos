@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -9,9 +10,12 @@ using System.Text.Json;
 using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using MiniValidation;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -77,18 +81,39 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Logging.AddConsole();
 builder.Logging.AddSimpleConsole();
 
-builder.Services.AddAuthentication("BasicAuthentication")
-    .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+// BasicAuth
+// builder.Services.AddAuthentication("BasicAuthentication")
+//     .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
 
-// builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//         .AddJwtBearer();
+builder.Services.AddAuthentication(o =>
+    {
+        o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        o.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        o.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+        .AddJwtBearer(o =>
+        {
+            o.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = false,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            };
+        });
 
+//BasicAuth
 // builder.Services.AddAuthorization(options =>{
 //     options.FallbackPolicy =  new AuthorizationPolicyBuilder()
 //     .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
 //     .RequireAuthenticatedUser()
 //     .Build();
 // });
+
+
 
 builder.Services.AddAuthorization();
 
@@ -222,6 +247,28 @@ app.MapGet("/api/error", () =>
     throw new ApplicationException("Ups ... something went wrong.");
 }).AllowAnonymous();
 
+
+app.MapPost("/api/token", ([FromBody]User user) =>
+{
+    if (user.Username == "daiot")
+    {
+        var validIssuer = builder.Configuration["Jwt:Issuer"];
+        var validAudience = builder.Configuration["Jwt:Audience"];
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]));
+        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(claims: new []
+            {
+                new Claim("name",user.Username), 
+                new Claim(  ClaimTypes.NameIdentifier,user.Id.ToString())
+            }, issuer: validIssuer, audience: validAudience,
+            signingCredentials: credentials);
+
+        return Results.Ok(new JwtSecurityTokenHandler().WriteToken(token));
+    }
+
+    return Results.Unauthorized();
+});
+
 app.Run();
 
 
@@ -275,7 +322,7 @@ public class TodosService
     public Todo? GetById(int id) => _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity?.Name);
 }
 
-public record User(string Username, int Id = 1);
+public record User(string Username, string? PasswordHash = "", int Id = 1);
 
 
 public class UserService
