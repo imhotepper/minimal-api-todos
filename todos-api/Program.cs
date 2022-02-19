@@ -12,6 +12,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -75,6 +76,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TodosService>();
+builder.Services.AddScoped<DataProtector>();
 
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -160,6 +162,14 @@ app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{builder
 //Add authentication
 app.UseAuthentication();
 app.UseAuthorization();
+
+public static class ClaimsPrincipalExtension
+{
+    public static T GetId<T>(this ClaimsPrincipal user, ClaimTypes type)
+    {
+        user.Claims.Where(x => x.Type == type.ToString());
+    }
+}
 
 //GetAll
 app.MapGet("/api/todos",
@@ -248,8 +258,9 @@ app.MapGet("/api/error", () =>
 }).AllowAnonymous();
 
 
-app.MapPost("/api/token", ([FromBody]User user) =>
+app.MapPost("/api/token", ([FromBody]User user,DataProtector protector) =>
 {
+    
     if (user.Username == "daiot")
     {
         var validIssuer = builder.Configuration["Jwt:Issuer"];
@@ -259,7 +270,7 @@ app.MapPost("/api/token", ([FromBody]User user) =>
         var token = new JwtSecurityToken(claims: new []
             {
                 new Claim("name",user.Username), 
-                new Claim(  ClaimTypes.NameIdentifier,user.Id.ToString())
+                new Claim(  ClaimTypes.NameIdentifier,  protector.Protect(user.Id.ToString()))
             }, issuer: validIssuer, audience: validAudience,
             signingCredentials: credentials);
 
@@ -402,4 +413,17 @@ public class TodoProfile : Profile
     {
         CreateMap<Todo, TodoDto>().ReverseMap();
     }
+}
+
+
+//Data protection service
+public class DataProtector
+{
+    private readonly IDataProtector _protector;
+
+    public DataProtector( IDataProtectionProvider dataProtector, IConfiguration config) => 
+        _protector = dataProtector.CreateProtector(config["Jwt:Key"]);
+
+    public string Protect(string value) => _protector.Protect(value);
+    public string Unprotect(string value) => _protector.Unprotect(value);
 }
