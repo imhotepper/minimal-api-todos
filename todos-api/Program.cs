@@ -1,24 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
-using System.Text.Encodings.Web;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
 using AutoMapper;
 using FluentValidation;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MiniValidation;
 using BC = BCrypt.Net.BCrypt;
@@ -89,16 +81,7 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Logging.AddConsole();
 builder.Logging.AddSimpleConsole();
 
-// BasicAuth
-// builder.Services.AddAuthentication("BasicAuthentication")
-//     .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
-
-builder.Services.AddAuthentication(o =>
-    {
-        o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        o.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        o.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(o =>
         {
             o.TokenValidationParameters = new TokenValidationParameters
@@ -112,14 +95,6 @@ builder.Services.AddAuthentication(o =>
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
             };
         });
-
-//BasicAuth
-// builder.Services.AddAuthorization(options =>{
-//     options.FallbackPolicy =  new AuthorizationPolicyBuilder()
-//     .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
-//     .RequireAuthenticatedUser()
-//     .Build();
-// });
 
 
 builder.Services.AddAuthorization();
@@ -250,7 +225,8 @@ app.MapDelete("/api/todos/{id}",
             ? Results.NoContent()
             : Results.StatusCode((int)HttpStatusCode.InternalServerError));
 
-app.MapGet("/api/error", () =>
+app.MapGet("/api/error", () 
+    =>
 {
     throw new ApplicationException("Ups ... something went wrong.");
 }).AllowAnonymous();
@@ -305,20 +281,20 @@ public class TodosService
 
     public int Create(Todo todo)
     {
-        todo.UserName = _user.Identity?.Name;
+        todo.UserName = _user?.Identity?.Name;
         todo.Id = _todos.Count + 1;
         _todos.Add(todo);
         return todo.Id ?? -1;
     }
 
-    public IEnumerable<Todo> GetAll() => _todos.Where(x => x.UserName == _user.Identity?.Name).ToList();
+    public IEnumerable<Todo> GetAll() => _todos.Where(x => x.UserName == _user?.Identity?.Name).ToList();
 
     public bool Delete(int id) =>
-        _todos.Remove(_todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity?.Name));
+        _todos.Remove(_todos.FirstOrDefault(x => x.Id == id && x.UserName == _user?.Identity?.Name));
 
     public void Update(int id, Todo todo)
     {
-        var td = _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity?.Name);
+        var td = _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user?.Identity?.Name);
         if (td == null) return;
         td.Title = todo.Title;
         td.IsCompleted = todo.IsCompleted;
