@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.OpenApi.Models;
@@ -12,12 +13,16 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MiniValidation;
+using BC = BCrypt.Net.BCrypt;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,7 +81,8 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TodosService>();
-builder.Services.AddScoped<DataProtector>();
+// builder.Services.AddScoped<DataProtector>();
+builder.Services.AddMemoryCache();
 
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -114,7 +120,6 @@ builder.Services.AddAuthentication(o =>
 //     .RequireAuthenticatedUser()
 //     .Build();
 // });
-
 
 
 builder.Services.AddAuthorization();
@@ -163,13 +168,6 @@ app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{builder
 app.UseAuthentication();
 app.UseAuthorization();
 
-public static class ClaimsPrincipalExtension
-{
-    public static T GetId<T>(this ClaimsPrincipal user, ClaimTypes type)
-    {
-        user.Claims.Where(x => x.Type == type.ToString());
-    }
-}
 
 //GetAll
 app.MapGet("/api/todos",
@@ -257,27 +255,23 @@ app.MapGet("/api/error", () =>
     throw new ApplicationException("Ups ... something went wrong.");
 }).AllowAnonymous();
 
-
-app.MapPost("/api/token", ([FromBody]User user,DataProtector protector) =>
+app.MapPost("/api/register", (NewUserRequest newUser, UserService userService) =>
 {
+    //If present return 400 bad req
+    var user = userService.Register(newUser);
+    if (user == null) return Results.BadRequest("Username taken ");
     
-    if (user.Username == "daiot")
-    {
-        var validIssuer = builder.Configuration["Jwt:Issuer"];
-        var validAudience = builder.Configuration["Jwt:Audience"];
-        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]));
-        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(claims: new []
-            {
-                new Claim("name",user.Username), 
-                new Claim(  ClaimTypes.NameIdentifier,  protector.Protect(user.Id.ToString()))
-            }, issuer: validIssuer, audience: validAudience,
-            signingCredentials: credentials);
-
-        return Results.Ok(new JwtSecurityTokenHandler().WriteToken(token));
-    }
-
-    return Results.Unauthorized();
+    //get token
+    return Results.Ok(userService.GetToken(user));
+});
+app.MapPost("/api/token", (NewUserRequest userRequest, UserService userService) =>
+{
+     var user = userService.ValidateUser(userRequest);
+    if (user == null) return Results.Unauthorized();
+    var token = userService.GetToken(user);
+        return Results.Ok(token);
+   
+   
 });
 
 app.Run();
@@ -333,76 +327,60 @@ public class TodosService
     public Todo? GetById(int id) => _todos.FirstOrDefault(x => x.Id == id && x.UserName == _user.Identity?.Name);
 }
 
-public record User(string Username, string? PasswordHash = "", int Id = 1);
+public record User(string Username, string? PasswordHash , int Id = 1);
 
+public record NewUserRequest(string userName, string password);
 
 public class UserService
 {
-    public async Task<User?> Authenticate(string username, string password) =>
-        await Task.FromResult(!(string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            ? new User(username)
-            : null);
-}
+    private readonly IConfiguration _configuration;
 
-public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
-{
-    private readonly UserService _userService;
-
-    public BasicAuthenticationHandler(
-        IOptionsMonitor<AuthenticationSchemeOptions> options,
-        ILoggerFactory logger,
-        UrlEncoder encoder,
-        ISystemClock clock,
-        UserService userService
-    )
-        : base(options, logger, encoder, clock)
+    private readonly string UsersKey = "users-list";
+    private List<User> _users;
+    public UserService(IMemoryCache memoryCache, IConfiguration configuration)
     {
-        _userService = userService;
+        _configuration = configuration;
+        if(memoryCache.TryGetValue(UsersKey, out List<User> usersList))
+            _users = usersList;
+        else
+        {
+            _users = new();
+            memoryCache.Set(UsersKey, _users);
+        }
+    }
+    
+    public User ValidateUser(NewUserRequest newUser)
+    {
+        var user = _users.FirstOrDefault(x => x.Username == newUser.userName);
+        if (user == null) return null;
+        
+        return BC.Verify(newUser.password, user.PasswordHash) ? user : null;
     }
 
-    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+    public User? Register(NewUserRequest newUser)
     {
-        // skip authentication if endpoint has [AllowAnonymous] attribute
-        var endpoint = Context.GetEndpoint();
-        if (endpoint?.Metadata.GetMetadata<IAllowAnonymous>() != null)
-            return AuthenticateResult.NoResult();
-
-
-        if (!Request.Headers.ContainsKey("Authorization"))
-            return AuthenticateResult.Fail("Missing Authorization Header");
-
-        User? user = null;
-
-        try
-        {
-            var authHeader = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-            if (authHeader.Parameter != null)
+        //return null if user exists
+        if (_users.Any(x => x.Username == newUser.userName)) return null;
+       
+        var user = new User(newUser.userName,  BCrypt.Net.BCrypt.HashPassword(newUser.password), _users.Count+1);
+        _users.Add(user);
+        return user;
+    }
+    
+    public string GetToken(User user)
+    {
+        var validIssuer = _configuration["Jwt:Issuer"];
+        var validAudience = _configuration["Jwt:Audience"];
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+        var tokenClaims = new JwtSecurityToken(claims: new []
             {
-                var credentialBytes = Convert.FromBase64String(authHeader.Parameter);
-                var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
-                var username = credentials[0];
-                var password = credentials[1];
-                user = await _userService.Authenticate(username, password);
-            }
-        }
-        catch
-        {
-            return AuthenticateResult.Fail("Invalid Authorization Header");
-        }
-
-        if (user == null)
-            return AuthenticateResult.Fail("Invalid Username or Password");
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Username),
-        };
-        var identity = new ClaimsIdentity(claims, Scheme.Name);
-        var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, Scheme.Name);
-
-        return AuthenticateResult.Success(ticket);
+                new Claim("name",user.Username), 
+                new Claim(  "sub",  user.Id.ToString())
+            }, issuer: validIssuer, audience: validAudience,
+            signingCredentials: credentials);
+        var token = new JwtSecurityTokenHandler().WriteToken(tokenClaims);
+        return token;
     }
 }
 
@@ -417,13 +395,26 @@ public class TodoProfile : Profile
 
 
 //Data protection service
-public class DataProtector
+// public class DataProtector
+// {
+//     private readonly IDataProtector _protector;
+//
+//     public DataProtector( IDataProtectionProvider dataProtector, IConfiguration config) => 
+//         _protector = dataProtector.CreateProtector(config["Jwt:Key"]);
+//
+//     public string Protect(string value) => _protector.Protect(value);
+//     public string Unprotect(string value) => _protector.Unprotect(value);
+// }
+
+
+public static class ClaimsPrincipalExtension
 {
-    private readonly IDataProtector _protector;
-
-    public DataProtector( IDataProtectionProvider dataProtector, IConfiguration config) => 
-        _protector = dataProtector.CreateProtector(config["Jwt:Key"]);
-
-    public string Protect(string value) => _protector.Protect(value);
-    public string Unprotect(string value) => _protector.Unprotect(value);
+    public static T GetUserId<T>(this ClaimsPrincipal user)
+    {
+        var uid = user.Claims.FirstOrDefault(x => x.Type == "sub");
+        if (uid != null)
+            return (T)Convert.ChangeType(uid, typeof(T));
+        else
+            throw new ApplicationException("unable to find user inside the received claims!");
+    }
 }
