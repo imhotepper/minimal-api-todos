@@ -24,9 +24,18 @@ public class ApiTests
         // _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
         //     Convert.ToBase64String(Encoding.UTF8.GetBytes("username:password")));
 
-        _client.DefaultRequestHeaders.Authorization
-            = new AuthenticationHeaderValue("Bearer",
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiZGFpb3QiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjAiLCJpc3MiOiJtaW5pbWFsLWFwaSIsImF1ZCI6Im1pbmltYWwtYXBpIn0.cF7IVipj9LQ7FR7mJo0a4w0btCDvTB4PvIAnkfvqlc8");
+       
+       var response =   _client.PostAsJsonAsync("/api/register", new
+        {
+            UserName = Guid.NewGuid().ToString(),
+            Password = Guid.NewGuid().ToString()
+        }).Result;
+
+       var token = response.Content.ReadAsStringAsync().Result;
+     
+       _client.DefaultRequestHeaders.Authorization
+           = new AuthenticationHeaderValue("Bearer",token);
+
     }
 
     [Fact]

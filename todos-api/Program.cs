@@ -10,10 +10,10 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using MiniValidation;
-using BC = BCrypt.Net.BCrypt;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -73,7 +73,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<TodosService>();
-// builder.Services.AddScoped<DataProtector>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddMemoryCache();
 
 
@@ -238,14 +238,14 @@ app.MapPost("/api/register", (NewUserRequest newUser, UserService userService) =
     if (user == null) return Results.BadRequest("Username taken ");
     
     //get token
-    return Results.Ok(userService.GetToken(user));
+    return Results.Text(userService.GetToken(user));
 });
 app.MapPost("/api/token", (NewUserRequest userRequest, UserService userService) =>
 {
      var user = userService.ValidateUser(userRequest);
     if (user == null) return Results.Unauthorized();
     var token = userService.GetToken(user);
-        return Results.Ok(token);
+    return Results.Text(token);
    
    
 });
@@ -310,12 +310,15 @@ public record NewUserRequest(string userName, string password);
 public class UserService
 {
     private readonly IConfiguration _configuration;
+    private readonly IPasswordHasher<User> _passwordHasher;
 
     private readonly string UsersKey = "users-list";
     private List<User> _users;
-    public UserService(IMemoryCache memoryCache, IConfiguration configuration)
+    public UserService(IMemoryCache memoryCache, IConfiguration configuration,IPasswordHasher<User> passwordHasher)
     {
         _configuration = configuration;
+        _passwordHasher = passwordHasher;
+        
         if(memoryCache.TryGetValue(UsersKey, out List<User> usersList))
             _users = usersList;
         else
@@ -325,12 +328,14 @@ public class UserService
         }
     }
     
-    public User ValidateUser(NewUserRequest newUser)
+    public User? ValidateUser(NewUserRequest newUser)
     {
         var user = _users.FirstOrDefault(x => x.Username == newUser.userName);
         if (user == null) return null;
-        
-        return BC.Verify(newUser.password, user.PasswordHash) ? user : null;
+     
+        return _passwordHasher.VerifyHashedPassword(user, 
+            user.PasswordHash, 
+            newUser.password) == PasswordVerificationResult.Success ? user : null;
     }
 
     public User? Register(NewUserRequest newUser)
@@ -338,7 +343,8 @@ public class UserService
         //return null if user exists
         if (_users.Any(x => x.Username == newUser.userName)) return null;
        
-        var user = new User(newUser.userName,  BCrypt.Net.BCrypt.HashPassword(newUser.password), _users.Count+1);
+        var user = new User(newUser.userName,"", _users.Count+1);
+        user = user with { PasswordHash = _passwordHasher.HashPassword(user, newUser.password) };  
         _users.Add(user);
         return user;
     }
@@ -363,10 +369,7 @@ public class UserService
 //Automapper
 public class TodoProfile : Profile
 {
-    public TodoProfile()
-    {
-        CreateMap<Todo, TodoDto>().ReverseMap();
-    }
+    public TodoProfile() => CreateMap<Todo, TodoDto>().ReverseMap();
 }
 
 
