@@ -14,6 +14,7 @@
 - [x] TodosService based on List<T>
 - [x] Global error handling
 - [x] BasicAuthentication
+- [x] JWT Authentication can be checked in this branch [jwt](https://github.com/imhotepper/minimal-api-todos/tree/feat/jwt)
 - [x] Integration Tests [XUnit](https://xunit.net/)
 - [x] [Automaper](https://automapper.org/)
 - [x] azure/heroku deploy 
